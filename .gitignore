@@ -71,3 +71,9 @@ models/
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# 숨김 파일/폴더 무시
+.*
+!.git
+!.gitignore
+!.gitattributes
