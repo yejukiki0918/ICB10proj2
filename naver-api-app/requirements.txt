@@ -4,3 +4,5 @@ plotly
 requests
 koreanize-matplotlib
 python-dotenv
+scikit-learn
+
