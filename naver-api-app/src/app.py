@@ -1,6 +1,6 @@
 """
 Streamlit 대시보드 메인 앱 진입점입니다.
-.env 파일로부터 네이버 API 인증 키를 우선 로드하여 공통 세션 상태를 활성화하고,
+Streamlit Secrets 및 .env 파일로부터 네이버 API 인증 키를 우선 로드하여 공통 세션 상태를 활성화하고,
 대시보드 메인 화면 및 사이드바 가이드를 구성합니다.
 """
 
@@ -20,9 +20,23 @@ st.set_page_config(
 load_dotenv()
 
 def main():
-    # .env 혹은 환경변수로부터 인증 키 가져오기
-    env_client_id = os.environ.get("NAVER_CLIENT_ID", "").strip()
-    env_client_secret = os.environ.get("NAVER_CLIENT_SECRET", "").strip()
+    # 1. Streamlit Secrets 우선 조회, 없으면 환경변수(.env) 조회
+    env_client_id = ""
+    env_client_secret = ""
+    
+    try:
+        if "NAVER_CLIENT_ID" in st.secrets:
+            env_client_id = st.secrets["NAVER_CLIENT_ID"].strip()
+        if "NAVER_CLIENT_SECRET" in st.secrets:
+            env_client_secret = st.secrets["NAVER_CLIENT_SECRET"].strip()
+    except Exception:
+        pass
+
+    # st.secrets에 값이 없으면 환경 변수(.env)에서 로드 시도
+    if not env_client_id:
+        env_client_id = os.environ.get("NAVER_CLIENT_ID", "").strip()
+    if not env_client_secret:
+        env_client_secret = os.environ.get("NAVER_CLIENT_SECRET", "").strip()
     
     # 세션 상태 초기화 및 연동
     if "client_id" not in st.session_state:
@@ -30,7 +44,7 @@ def main():
     if "client_secret" not in st.session_state:
         st.session_state["client_secret"] = env_client_secret
 
-    # 현재 실시간 환경변수 변경사항 반영을 위해 세션이 비어있으면 환경변수 값 할당
+    # 현재 실시간 환경변수/설정 변경사항 반영을 위해 세션이 비어있으면 값 할당
     if not st.session_state["client_id"] and env_client_id:
         st.session_state["client_id"] = env_client_id
     if not st.session_state["client_secret"] and env_client_secret:
@@ -46,10 +60,22 @@ def main():
     if is_authenticated:
         st.sidebar.success("✅ 네이버 API 인증 완료")
         
-        # 환경변수 기반 로드인지 확인
+        # 환경변수/Secrets 기반 로드인지 확인
         if (st.session_state["client_id"] == env_client_id and 
                 st.session_state["client_secret"] == env_client_secret):
-            st.sidebar.info("💡 `.env` 파일로부터 API 키를 자동으로 로드하여 적용했습니다.")
+            
+            # secrets 우선 검증
+            has_secrets = False
+            try:
+                if "NAVER_CLIENT_ID" in st.secrets and st.session_state["client_id"] == st.secrets["NAVER_CLIENT_ID"]:
+                    has_secrets = True
+            except Exception:
+                pass
+                
+            if has_secrets:
+                st.sidebar.info("💡 Streamlit Secrets 설정을 자동으로 로드했습니다.")
+            else:
+                st.sidebar.info("💡 `.env` 파일로부터 API 키를 자동으로 로드했습니다.")
         else:
             st.sidebar.info("💡 사용자가 직접 입력한 임시 키를 적용했습니다.")
             
@@ -66,7 +92,7 @@ def main():
     else:
         st.sidebar.error("❌ API 인증 필요")
         st.sidebar.warning(
-            "프로젝트 루트의 `.env` 파일에 `NAVER_CLIENT_ID`와 `NAVER_CLIENT_SECRET` 정보를 입력해 주세요."
+            "배포 환경의 Streamlit Secrets 설정이나 로컬의 `.env` 파일에 `NAVER_CLIENT_ID`와 `NAVER_CLIENT_SECRET`을 설정해 주세요."
         )
         
         # 수동/임시 입력 폼 제공
@@ -111,9 +137,16 @@ def main():
         st.warning("""
         ### ⚠️ 분석 서비스를 이용하시려면 API 인증이 필요합니다.
         
-        **[인증 설정 방법]**
+        **[인증 설정 방법 (배포 환경)]**
+        - Streamlit Community Cloud의 **App Settings > Secrets** 메뉴에 아래 설정을 입력해 주세요:
+          ```toml
+          NAVER_CLIENT_ID = "여러분의_Client_ID"
+          NAVER_CLIENT_SECRET = "여러분의_Client_Secret"
+          ```
+        
+        **[인증 설정 방법 (로컬 환경)]**
         1. 프로젝트 루트 폴더에서 `.env` 파일을 엽니다.
-        2. 네이버 개발자 센터에서 발급받은 `NAVER_CLIENT_ID`와 `NAVER_CLIENT_SECRET` 값을 기입합니다.
+        2. `NAVER_CLIENT_ID`와 `NAVER_CLIENT_SECRET` 값을 기입합니다.
            ```env
            NAVER_CLIENT_ID=여러분의_Client_ID
            NAVER_CLIENT_SECRET=여러분의_Client_Secret
