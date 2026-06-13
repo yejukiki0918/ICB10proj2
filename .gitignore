@@ -89,6 +89,7 @@ Thumbs.db
 !/.git
 !/.gitignore
 !/.gitattributes
+!/.agents/
 
 # Streamlit 배포 설정 허용 (비밀 파일 secrets.toml은 엄격히 제외)
 !.streamlit/
