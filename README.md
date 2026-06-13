@@ -1,3 +1,24 @@
+# 🚀 네이버 API 활용 Streamlit 데이터 대시보드
+
+이 프로젝트는 네이버 API를 통해 수집한 데이터를 시각화하고 분석하는 **Streamlit 대시보드** 애플리케이션입니다.
+
+---
+
+## 🔗 서비스 접속 주소
+- **Streamlit 배포 URL**: [https://icb10proj2-gsnbju3bnmvrrlf7yeuuej.streamlit.app/](https://icb10proj2-gsnbju3bnmvrrlf7yeuuej.streamlit.app/)
+
+---
+
+## 🛠️ 현재 프로젝트 작업 내역
+1. **Naver API 연동 및 Streamlit 웹 애플리케이션 구축**
+   - `naver-api-app` 디렉토리 내에 네이버 검색/쇼핑 API 등과 연동하는 클라이언트 코드(`src/api_client.py`) 구현
+   - Streamlit 웹 프레임워크 기반의 메인 앱 및 다중 페이지 구조(`src/app.py`, `src/pages/`) 완성
+2. **Git 자동화 자동 커밋/푸시 훅(Git Hooks) 구축**
+   - **`post-commit` 훅 설정**: 로컬에서 커밋 실행 시 자동으로 원격 저장소(`origin`)에 푸시하여 실시간으로 변경 사항 동기화
+   - **`pre-push` 훅 설정**: 푸시 실행 시 커밋되지 않은 변경사항이 존재하면 자동으로 `git add` 및 커밋을 생성하고 푸시하여 작업 내역 누락 방지
+
+---
+
 ## STEP 0. 팀 구성 및 협업 환경 세팅
 
 ### 슬랙 세팅
