@@ -1,4 +1,4 @@
-hstreamlit
+streamlit
 pandas
 plotly
 requests
