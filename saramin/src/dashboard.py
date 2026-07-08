@@ -1,0 +1,157 @@
+"""
+사람인 마케터 채용공고 데이터 분석 대시보드
+주요 기능:
+- Plotly 기반의 100% 인터랙티브 시각화 제공
+- 사이드바 다중 필터링 (직무군, 경력 등)
+- 데이터 전처리 파이프라인 캐싱 (st.cache_data)
+작성자: Antigravity
+생성일: 2026-06-27
+"""
+
+import os
+import sqlite3
+import pandas as pd
+import streamlit as st
+import plotly.express as px
+import plotly.graph_objects as go
+from collections import Counter
+from eda_script import preprocess_and_extract, STOP_WORDS
+
+# 기본 설정
+st.set_page_config(page_title="사람인 마케터 채용 대시보드", layout="wide")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, 'data', 'saramin_jobs.db')
+
+@st.cache_data
+def load_and_preprocess_data():
+    conn = sqlite3.connect(DB_PATH)
+    query = '''
+        SELECT l.job_id, l.company_name, l.title, l.conditions, l.link, d.detail_text
+        FROM job_listings l
+        LEFT JOIN job_details d ON l.job_id = d.job_id
+    '''
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    
+    # eda_script.py의 전처리 로직 재사용
+    df = preprocess_and_extract(df)
+    return df
+
+def get_keywords(text_series, top_n=10):
+    words = []
+    for text in text_series.dropna():
+        tokens = str(text).split()
+        for t in tokens:
+            if t not in STOP_WORDS and len(t) > 1:
+                words.append(t)
+    counter = Counter(words)
+    return counter.most_common(top_n)
+
+# 메인 UI
+st.title("📊 사람인 마케터 채용 시장 분석 대시보드")
+st.markdown("수집된 채용 데이터를 바탕으로 유관 직무, 요구 역량, 핵심 키워드를 한눈에 파악할 수 있는 인터랙티브 대시보드입니다.")
+
+with st.spinner("데이터를 로딩하고 분석 중입니다..."):
+    df_raw = load_and_preprocess_data()
+
+# --- 사이드바 필터 ---
+st.sidebar.header("🔍 필터 설정")
+selected_categories = st.sidebar.multiselect(
+    "직무군 선택",
+    options=df_raw['job_category'].unique(),
+    default=df_raw['job_category'].unique()
+)
+
+# 경력 필터
+# None 값 등을 '정보없음'으로 치환
+df_raw['experience_clean'] = df_raw['experience'].fillna('정보없음')
+exp_options = df_raw['experience_clean'].unique()
+selected_exps = st.sidebar.multiselect(
+    "요구 경력 선택",
+    options=exp_options,
+    default=exp_options
+)
+
+# 데이터 필터링 적용
+df = df_raw[
+    (df_raw['job_category'].isin(selected_categories)) & 
+    (df_raw['experience_clean'].isin(selected_exps))
+]
+
+# --- 상단 KPI ---
+st.write("### 📌 KPI 요약")
+kpi1, kpi2, kpi3 = st.columns(3)
+kpi1.metric("전체 공고 수", f"{len(df):,} 건")
+top_cat = df['job_category'].mode()[0] if not df.empty else "없음"
+kpi2.metric("가장 수요가 높은 직군", top_cat)
+top_exp = df['experience_clean'].mode()[0] if not df.empty else "없음"
+kpi3.metric("가장 많이 찾는 경력", top_exp)
+
+st.divider()
+
+if df.empty:
+    st.warning("선택한 필터에 해당하는 데이터가 없습니다.")
+    st.stop()
+
+# --- 차트 영역 ---
+col1, col2 = st.columns(2)
+
+with col1:
+    st.write("#### 🎯 직무군별 공고 분포")
+    cat_counts = df['job_category'].value_counts().reset_index()
+    cat_counts.columns = ['직무군', '공고 수']
+    fig1 = px.pie(cat_counts, names='직무군', values='공고 수', hole=0.4, 
+                  color_discrete_sequence=px.colors.qualitative.Pastel)
+    fig1.update_traces(textposition='inside', textinfo='percent+label')
+    st.plotly_chart(fig1, use_container_width=True)
+
+with col2:
+    st.write("#### 💼 요구 경력 분포")
+    exp_counts = df['experience_clean'].value_counts().reset_index()
+    exp_counts.columns = ['경력', '공고 수']
+    fig2 = px.bar(exp_counts, x='공고 수', y='경력', orientation='h',
+                  color='공고 수', color_continuous_scale='Blues')
+    fig2.update_layout(yaxis={'categoryorder':'total ascending'})
+    st.plotly_chart(fig2, use_container_width=True)
+
+st.divider()
+
+# --- 핵심 키워드 영역 ---
+st.write("### 💡 필수 자격요건 vs 우대사항 핵심 키워드")
+st.markdown("필터링된 직무군에서 가장 자주 등장하는 실무 키워드를 비교합니다.")
+
+col3, col4 = st.columns(2)
+
+with col3:
+    st.write("##### 필수 자격요건 (Required)")
+    req_kws = get_keywords(df['req_text'], 15)
+    if req_kws:
+        df_req = pd.DataFrame(req_kws, columns=['단어', '빈도'])
+        fig3 = px.bar(df_req, x='빈도', y='단어', orientation='h', 
+                      color='빈도', color_continuous_scale='Reds')
+        fig3.update_layout(yaxis={'categoryorder':'total ascending'})
+        st.plotly_chart(fig3, use_container_width=True)
+    else:
+        st.info("데이터가 부족합니다.")
+
+with col4:
+    st.write("##### 우대사항 (Preferred)")
+    pref_kws = get_keywords(df['pref_text'], 15)
+    if pref_kws:
+        df_pref = pd.DataFrame(pref_kws, columns=['단어', '빈도'])
+        fig4 = px.bar(df_pref, x='빈도', y='단어', orientation='h', 
+                      color='빈도', color_continuous_scale='Teal')
+        fig4.update_layout(yaxis={'categoryorder':'total ascending'})
+        st.plotly_chart(fig4, use_container_width=True)
+    else:
+        st.info("데이터가 부족합니다.")
+
+st.divider()
+st.write("#### 📍 주요 근무 지역 분포")
+loc_counts = df['location'].fillna('정보없음').value_counts().reset_index().head(10)
+loc_counts.columns = ['지역', '공고 수']
+fig5 = px.treemap(loc_counts, path=['지역'], values='공고 수',
+                  color='공고 수', color_continuous_scale='Purp')
+st.plotly_chart(fig5, use_container_width=True)
+
+st.caption("Data source: Saramin Job Listings | Generated by Antigravity Dashboard Engine")

@@ -27,7 +27,7 @@ You are a senior data analyst with 20 years of experience. Your goal is to perfo
 ### 3. Data Visualization
 - **Style**: Do NOT use `seaborn` style settings (e.g., avoid `sns.set_theme()` or `sns.set()`). Use standard `matplotlib` styles.
 - **Korean Font**: Always use `koreanize-matplotlib` for proper Korean font rendering in plots.
-- **Volume**: Create at least **10 different visualizations**.
+- **Volume**: Create at least **15 different visualizations**.
 - **Variety**: Use a diverse combination of:
     - **Univariate Analysis**: Histograms, box plots, frequency plots.
     - **Bivariate Analysis**: Scatter plots, grouped bar charts, line charts.
@@ -49,7 +49,7 @@ You are a senior data analyst with 20 years of experience. Your goal is to perfo
 
 ## Quality Assurance Checklist
 After completing the analysis, you must verify that:
-1. All 10+ visualizations are included with their respective tables and 50+ character interpretations.
+1. All 15+ visualizations are included with their respective tables and 50+ character interpretations.
 2. Descriptive statistics for both types (categorical/numerical) have 1,000+ character reports.
 3. TF-IDF was used for text instead of morphological analysis.
 4. Duplicate checks and basic info are present.
