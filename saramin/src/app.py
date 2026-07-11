@@ -255,6 +255,7 @@ with tab3:
             ax.imshow(wordcloud, interpolation='bilinear')
             ax.axis("off")
             st.pyplot(fig_wc)
+            plt.close(fig_wc)
         
     st.subheader("📉 스펙 요구 강도 vs 위험 시그널 산점도")
     fig_scatter = px.box(df, x='rf_score', y='spec_hardness', color='rf_score')
