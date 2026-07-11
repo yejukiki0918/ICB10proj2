@@ -1,0 +1,5 @@
+- `[x]` `build_sqlite.py` 작성 및 실행 (SQLite DB 생성)
+- `[x]` `dashboard.py` 데이터 로딩 로직을 SQLite 쿼리로 리팩토링
+- `[x]` 차트 및 지도 시각화가 SQLite 쿼리 결과를 사용하도록 수정
+- `[x]` 캐시 적용 확인 및 오류 점검
+- `[x]` `walkthrough_sqlite.md` 작성

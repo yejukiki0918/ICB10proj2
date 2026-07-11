@@ -1,0 +1,9 @@
+- `[x]` 환경 확인 및 패키지 설치 (`streamlit`, `plotly`, `openpyxl`, `pyarrow`, `fastparquet`)
+- `[x]` `seoul-pops/src/dashboard.py` 스크립트 작성
+    - `[x]` 라이브러리 임포트 및 페이지 기본 설정
+    - `[x]` 데이터 전처리 및 로드 모듈 구현 (`@st.cache_data` 적용)
+    - `[x]` 사이드바 및 필터 기능 구현
+    - `[x]` 메인 패널 KPI 지표 구현
+    - `[x]` Plotly 시각화 (시간대별 추이, 연령/성별, 행정동별 등) 구현
+- `[x]` 로컬에서 Streamlit 서버 실행 및 검증
+- `[x]` `walkthrough.md` 작성 및 마무리
