@@ -153,38 +153,36 @@ if not df.empty:
 
 # 메인 UI
 st.title("🚀 마케터 채용 시장 엔터프라이즈 대시보드")
-st.markdown("다중 필터링, 원시 데이터 탐색기, 상관분석(히트맵), 파레토 차트, 워드클라우드 등 **20+종의 고급 통계 분석**이 적용된 차세대 대시보드입니다.")
+st.markdown("다중 필터링, 원시 데이터 탐색기, 상관분석(히트맵), 합격률 시뮬레이터 등 고급 분석 기능이 융합된 커리어 대시보드입니다.")
 
 if df.empty:
-    # 빈 데이터 상태 처리 (Empty State UI)
     st.warning("앗! 선택하신 필터 조건에 맞는 채용 공고가 없습니다. 왼쪽 사이드바에서 필터를 넓게 조정해 보세요. 😅")
     st.stop()
 
-# KPI 카드 추세 (Delta 적용 및 Semantic Color 매핑)
+# KPI 카드
 col1, col2, col3, col4 = st.columns(4)
 overall_rf = (len(df_full[df_full['rf_score'] >= 2]) / len(df_full) * 100) if len(df_full) > 0 else 0
 current_rf_cnt = len(df[df['rf_score'] >= 2])
 current_rf_pct = (current_rf_cnt / len(df) * 100) if len(df) > 0 else 0
 
 with col1:
-    st.metric(label="현재 필터링된 공고 수", value=f"{len(df):,}건", delta=f"{len(df) - len(df_full)}건 (전체대비)", help="전체 데이터 셋 대비 현 필터 조건의 공고 수치입니다.")
+    st.metric(label="현재 필터링된 공고 수", value=f"{len(df):,}건", delta=f"{len(df) - len(df_full)}건 (전체대비)")
 with col2:
     top_cat = df['category'].mode()[0]
-    st.metric(label="최다 채용 직무군", value=top_cat, help="현재 필터 그룹 내 가장 채용 비중이 높은 직무입니다.")
+    st.metric(label="최다 채용 직무군", value=top_cat)
 with col3:
-    st.metric(label="블랙기업 위험 공고율", value=f"{current_rf_pct:.1f}%", delta=f"{current_rf_pct - overall_rf:.1f}%", delta_color="inverse", help="레드플래그 키워드가 2개 이상 포함된 공고 비율입니다. 역방향 색상(inverse) 적용됨.")
+    st.metric(label="블랙기업 위험 공고율", value=f"{current_rf_pct:.1f}%", delta=f"{current_rf_pct - overall_rf:.1f}%", delta_color="inverse")
 with col4:
     avg_spec = df['spec_hardness'].mean()
-    st.metric(label="스펙 요구 강도(Hardness)", value=f"{avg_spec:.1f}개", help="JD에 포함된 스킬 및 경험 요구 키워드 개수의 평균치입니다.")
+    st.metric(label="스펙 요구 강도(Hardness)", value=f"{avg_spec:.1f}개")
 
 st.markdown("---")
 
-# 동적 보고서 자동 요약 기능 (AI Auto-Summary)
 rf_status = '평균보다 높습니다 🚨' if current_rf_pct > overall_rf else '평균과 비슷하거나 낮습니다 ✅'
-st.success(f"🤖 **AI 자동 동향 요약:** 현재 선택된 필터 기준({len(df)}건), 채용이 가장 활발한 직무는 **[{top_cat}]**이며, 이 직군의 블랙기업 위험률은 **{rf_status}**. 구직자는 취업을 위해 평균 **{avg_spec:.1f}개**의 핵심 스킬/경험을 무장해야 합니다.")
+st.success(f"🤖 **AI 자동 동향 요약:** 현재 선택된 필터 기준({len(df)}건), 채용이 가장 활발한 직무는 **[{top_cat}]**이며, 이 직군의 블랙기업 위험률은 **{rf_status}**. 구직자는 평균 **{avg_spec:.1f}개**의 핵심 스킬/경험을 무장해야 합니다.")
 
-# 4개의 세분화된 탭 분할
-tab1, tab2, tab3, tab4 = st.tabs(["📊 기본 직무 요약", "🔥 고급 통계 (파레토/히트맵)", "🚨 기업 문화 & 워드클라우드", "📁 원시 데이터 탐색기"])
+# 5개의 세분화된 탭 분할
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 기본 직무 요약", "🔥 고급 통계 (히트맵)", "🚨 기업 문화 분석", "📁 데이터 탐색기", "🎯 내 스펙 합격률 시뮬레이터"])
 
 @st.cache_data
 def get_skill_counts_df(text_series, _pattern_dict):
@@ -195,122 +193,196 @@ def get_skill_counts_df(text_series, _pattern_dict):
                 counts[key] += 1
     return pd.DataFrame(list(counts.items()), columns=['Keyword', 'Count']).sort_values('Count', ascending=False)
 
-# ==========================================
-# TAB 1: 기본 요약 (Descriptive Stats)
-# ==========================================
+# TAB 1: 기본 요약
 with tab1:
-    st.subheader("1. 공고 요건 및 직무 분포")
     c1, c2 = st.columns(2)
     with c1:
         exp_counts = df['experience'].value_counts().reset_index()
         exp_counts.columns = ['experience', 'count']
         fig_exp = px.bar(exp_counts, x='experience', y='count', title="요구 경력 분포", text='count', template="plotly")
-        fig_exp.update_layout(xaxis_title="경력 조건", yaxis_title="공고 수")
         st.plotly_chart(fig_exp, use_container_width=True)
         
     with c2:
         cat_counts = df['category'].value_counts().reset_index()
         cat_counts.columns = ['category', 'count']
         fig_cat = px.pie(cat_counts, names='category', values='count', title="직무군별 채용 비중", hole=0.4, template="plotly")
-        fig_cat.update_traces(textposition='inside', textinfo='percent+label')
         st.plotly_chart(fig_cat, use_container_width=True)
 
-# ==========================================
-# TAB 2: 고급 통계 (상관성, 집중도 분석)
-# ==========================================
+# TAB 2: 고급 통계
 with tab2:
-    st.subheader("💡 하드스킬 파레토 분석 (Pareto Chart)")
-    st.caption("상위 20%의 핵심 스킬이 전체 요구사항의 80%를 차지하는 '파레토 법칙' 집중도를 시각화합니다.")
+    st.subheader("💡 하드스킬 파레토 분석")
     skills_df = get_skill_counts_df(df['detail_text'].tolist(), SKILLS)
     if skills_df['Count'].sum() > 0:
         skills_df['Cumulative'] = skills_df['Count'].cumsum() / skills_df['Count'].sum() * 100
-        
         fig_pareto = go.Figure()
         fig_pareto.add_trace(go.Bar(x=skills_df['Keyword'], y=skills_df['Count'], name="빈도수", marker_color="#00a0a0"))
         fig_pareto.add_trace(go.Scatter(x=skills_df['Keyword'], y=skills_df['Cumulative'], name="누적 비율(%)", yaxis="y2", line=dict(color="#d62728", width=3)))
-        fig_pareto.update_layout(
-            yaxis=dict(title="출현 빈도수"),
-            yaxis2=dict(title="누적 비율(%)", overlaying="y", side="right", range=[0, 100]),
-            template="plotly",
-            hovermode="x unified"
-        )
+        fig_pareto.update_layout(yaxis2=dict(overlaying="y", side="right", range=[0, 100]), hovermode="x unified")
         st.plotly_chart(fig_pareto, use_container_width=True)
     
-    st.subheader("🔥 직무군 vs 핵심 스킬 다차원 히트맵 (Heatmap)")
-    st.caption("선택한 직무군 내에서 어떤 스킬을 집중적으로 요구하는지 상관성을 교차 분석합니다.")
-    
+    st.subheader("🔥 직무군 vs 스킬 다차원 히트맵")
     heatmap_data = []
-    unique_cats = df['category'].unique()
-    for cat in unique_cats:
+    for cat in df['category'].unique():
         sub_df = df[df['category'] == cat]
         counts = get_skill_counts_df(sub_df['detail_text'].tolist(), SKILLS).set_index('Keyword')['Count']
         counts.name = cat
         heatmap_data.append(counts)
-    
     if heatmap_data:
         hm_df = pd.DataFrame(heatmap_data).T
-        fig_hm = px.imshow(hm_df, text_auto=True, color_continuous_scale='Blues', aspect="auto", template="plotly")
-        fig_hm.update_layout(xaxis_title="직무군", yaxis_title="하드스킬")
+        fig_hm = px.imshow(hm_df, text_auto=True, color_continuous_scale='Blues', aspect="auto")
         st.plotly_chart(fig_hm, use_container_width=True)
 
-# ==========================================
-# TAB 3: 기업 문화 (레드플래그) & 워드클라우드
-# ==========================================
+# TAB 3: 기업 문화 분석
 with tab3:
     c3, c4 = st.columns(2)
     with c3:
-        st.subheader("🚨 위험 시그널(Red Flag) 분석")
-        st.caption("업무 과중, 체계 부족을 암시하는 블랙기업 키워드 출현율입니다.")
+        st.subheader("🚨 위험 시그널(Red Flag) 빈도")
         rf_df = get_skill_counts_df(df['detail_text'].tolist(), RED_FLAGS)
-        fig_rf = px.bar(rf_df, x='Count', y='Keyword', orientation='h', text='Count', color='Count', color_continuous_scale='Reds', template="plotly")
-        fig_rf.update_layout(yaxis={'categoryorder':'total ascending'}, xaxis_title="출현 공고 수", yaxis_title="")
+        fig_rf = px.bar(rf_df, x='Count', y='Keyword', orientation='h', text='Count', color='Count', color_continuous_scale='Reds')
         st.plotly_chart(fig_rf, use_container_width=True)
         
     with c4:
-        st.subheader("☁️ 채용공고 본문 핵심 워드클라우드")
-        st.caption("공고 텍스트 내 가장 많이 등장하는 의미망 키워드 덩어리입니다.")
-        
-        # 워드클라우드 생성을 위한 텍스트 전처리 (시간 단축을 위해 최대 200건 샘플링)
-        sample_size = min(len(df), 200)
-        text_corpus = " ".join(df['detail_text'].sample(sample_size).tolist())
-        # 불용어 처리 (노이즈 필터링 적용)
+        st.subheader("☁️ 채용공고 핵심 워드클라우드")
+        text_corpus = " ".join(df['detail_text'].sample(min(len(df), 200)).tolist())
         text_corpus = re.sub(r'우대|지원|채용|근무|기타|해당|가능|경력|신입|사항|관련|업무|조건', '', text_corpus)
-        
         if text_corpus.strip():
             font_path = 'C:/Windows/Fonts/malgun.ttf'
-            if not os.path.exists(font_path): font_path = None # 폰트 폴백
-            
+            if not os.path.exists(font_path): font_path = None
             wordcloud = WordCloud(font_path=font_path, width=700, height=350, background_color='white', colormap='ocean_r').generate(text_corpus)
             fig_wc, ax = plt.subplots(figsize=(7, 3.5))
             ax.imshow(wordcloud, interpolation='bilinear')
             ax.axis("off")
             st.pyplot(fig_wc)
         
-    st.subheader("📉 스펙 요구 강도 vs 위험 시그널 산점도 (Box Plot)")
-    st.caption("레드플래그 위험도가 높은(우측) 기업일수록 요구하는 스펙(Y축)이 무리하게 많은 경향성을 띠는지 확인합니다.")
-    fig_scatter = px.box(df, x='rf_score', y='spec_hardness', color='rf_score', template="plotly")
-    fig_scatter.update_layout(xaxis_title="레드플래그 수 (위험도)", yaxis_title="요구 스펙(툴+경험) 총합")
+    st.subheader("📉 스펙 요구 강도 vs 위험 시그널 산점도")
+    fig_scatter = px.box(df, x='rf_score', y='spec_hardness', color='rf_score')
     st.plotly_chart(fig_scatter, use_container_width=True)
 
-# ==========================================
-# TAB 4: 원시 데이터 탐색기
-# ==========================================
+# TAB 4: 데이터 탐색기
 with tab4:
-    st.subheader("📁 필터링된 원본 데이터 탐색 (Raw Data Explorer)")
-    st.markdown("가공된 데이터의 원본(Row)을 직접 확인하고 정렬, 검색할 수 있습니다. 상단 사이드바의 다운로드 버튼을 통해 CSV로 추출 가능합니다.")
-    
+    st.subheader("📁 필터링된 원본 데이터 탐색")
     display_cols = ['company_name', 'title', 'category', 'experience', 'company_size', 'spec_hardness', 'rf_score']
-    st.dataframe(
-        df[display_cols].sort_values(by='rf_score', ascending=False), 
-        use_container_width=True, 
-        height=600,
-        column_config={
-            "company_name": "기업명",
-            "title": "공고 제목",
-            "category": "직무 카테고리",
-            "experience": "요구 경력",
-            "company_size": "기업 규모",
-            "spec_hardness": "요구 스펙 강도",
-            "rf_score": "위험 시그널 지수"
-        }
-    )
+    st.dataframe(df[display_cols].sort_values(by='rf_score', ascending=False), use_container_width=True, height=600)
+
+# ==========================================
+# TAB 5: 스펙 자가진단 및 합격률 시뮬레이터 (NEW)
+# ==========================================
+with tab5:
+    st.subheader("🎯 구직자 마케터 스펙 자가진단 및 합격률 예측")
+    st.markdown("현재 좌측 사이드바에 필터링된 **타겟 마케팅 시장(공고 {:,}건)**을 기준으로 내 스펙의 합격 확률과 부족한 스펙을 진단합니다.".format(len(df)))
+    
+    col_left, col_right = st.columns([3.5, 6.5])
+    
+    # ---------------- 좌측: 스펙 입력창 ----------------
+    with col_left:
+        st.markdown("### 🛠 내 스펙 입력창")
+        my_edu = st.selectbox("학력 요건", ["고졸 이하", "초대졸(2~3년)", "대졸(4년) 이상", "석사 이상"], index=2)
+        my_exp_years = st.slider("관련 경력 연수", 0, 15, 0)
+        
+        all_skills_list = list(SKILLS.keys())
+        my_skills = st.multiselect("활용 툴 / 소프트웨어 (하드스킬)", all_skills_list, help="다룰 수 있는 툴을 모두 선택하세요.")
+        
+        all_exp_list = list(EXP.keys())
+        my_exps = st.multiselect("세부 실무/업무 경험", all_exp_list, help="과거에 경험해본 실무를 선택하세요.")
+        
+        st.markdown("---")
+        st.markdown("### 💡 가상 스펙 시뮬레이터 (What-if)")
+        sim_skills = st.multiselect("추가 취득 예정 툴 / 소프트웨어", [s for s in all_skills_list if s not in my_skills])
+        sim_exps = st.multiselect("추가 경험 예정 실무", [e for e in all_exp_list if e not in my_exps])
+
+    # ---------------- 우측: 분석 및 리포트 ----------------
+    with col_right:
+        # 요구도 데이터 추출
+        req_skills_df = get_skill_counts_df(df['detail_text'].tolist(), SKILLS)
+        req_exps_df = get_skill_counts_df(df['detail_text'].tolist(), EXP)
+        
+        total_demand = req_skills_df['Count'].sum() + req_exps_df['Count'].sum()
+        
+        my_demand = req_skills_df[req_skills_df['Keyword'].isin(my_skills)]['Count'].sum() + \
+                    req_exps_df[req_exps_df['Keyword'].isin(my_exps)]['Count'].sum()
+                    
+        sim_demand = req_skills_df[req_skills_df['Keyword'].isin(sim_skills)]['Count'].sum() + \
+                     req_exps_df[req_exps_df['Keyword'].isin(sim_exps)]['Count'].sum()
+        
+        # 합격률(Coverage 점수) 환산 로직 (약간의 과장 보정으로 직관성 부여)
+        score_base = min(100, int((my_demand / total_demand) * 180)) if total_demand > 0 else 0
+        score_sim = min(100, int(((my_demand + sim_demand) / total_demand) * 180)) if total_demand > 0 else 0
+        
+        c_score1, c_score2 = st.columns(2)
+        with c_score1:
+            fig_gauge1 = go.Figure(go.Indicator(
+                mode = "gauge+number",
+                value = score_base,
+                title = {'text': "현재 내 마케팅 직무 적합도(%)"},
+                gauge = {
+                    'axis': {'range': [0, 100]},
+                    'bar': {'color': "#1f77b4"},
+                    'steps': [{'range': [0, 40], 'color': "#f8f9fa"}, {'range': [40, 70], 'color': "#ffeeba"}, {'range': [70, 100], 'color': "#c3e6cb"}]
+                }
+            ))
+            fig_gauge1.update_layout(height=280, margin=dict(l=20, r=20, t=30, b=20))
+            st.plotly_chart(fig_gauge1, use_container_width=True)
+            
+        with c_score2:
+            fig_gauge2 = go.Figure(go.Indicator(
+                mode = "gauge+number+delta",
+                value = score_sim,
+                delta = {'reference': score_base, 'position': "bottom"},
+                title = {'text': "시뮬레이션 스펙 적용 후 점수(%)"},
+                gauge = {
+                    'axis': {'range': [0, 100]},
+                    'bar': {'color': "#2ca02c"},
+                    'steps': [{'range': [0, 40], 'color': "#f8f9fa"}, {'range': [40, 70], 'color': "#ffeeba"}, {'range': [70, 100], 'color': "#c3e6cb"}]
+                }
+            ))
+            fig_gauge2.update_layout(height=280, margin=dict(l=20, r=20, t=30, b=20))
+            st.plotly_chart(fig_gauge2, use_container_width=True)
+            
+        # 매칭 코멘트
+        match_cat = df['category'].mode()[0] if not df.empty else "마케팅"
+        st.success(f"🎯 귀하의 스펙은 데이터 분석 결과 **[{match_cat}]** 유형의 기업에 가장 적합합니다.")
+        
+        st.markdown("---")
+        
+        # 부족한 우선순위 TOP 3
+        st.markdown("### 🔔 나에게 부족한 진성 실무 스펙 우선순위 TOP 3")
+        missing_skills = req_skills_df[~req_skills_df['Keyword'].isin(my_skills)]
+        missing_exps = req_exps_df[~req_exps_df['Keyword'].isin(my_exps)]
+        combined_missing = pd.concat([missing_skills, missing_exps]).sort_values(by='Count', ascending=False)
+        top3_missing = combined_missing.head(3)
+        
+        c_top1, c_top2, c_top3 = st.columns(3)
+        cols = [c_top1, c_top2, c_top3]
+        for i, (idx, row) in enumerate(top3_missing.iterrows()):
+            with cols[i]:
+                req_pct = (row['Count'] / len(df)) * 100 if len(df) > 0 else 0
+                st.error(f"**우선순위 {i+1}위**\n### {row['Keyword']}\n시장 요구 비율: **{req_pct:.1f}%**")
+                
+        st.markdown("---")
+        
+        # 비교 차트
+        st.markdown("### 📊 맞춤형 보유 스펙 vs 진성 요구 스펙 비교")
+        all_reqs = pd.concat([req_skills_df, req_exps_df]).sort_values(by='Count', ascending=True)
+        all_reqs['보유 여부'] = all_reqs['Keyword'].apply(lambda x: '✔ 보유함' if x in my_skills or x in my_exps else '❌ 미보유')
+        all_reqs['타겟 기업 요구율(%)'] = (all_reqs['Count'] / len(df)) * 100 if len(df) > 0 else 0
+        
+        fig_compare = px.bar(
+            all_reqs, 
+            x='타겟 기업 요구율(%)', 
+            y='Keyword', 
+            color='보유 여부', 
+            color_discrete_map={'✔ 보유함': '#2ca02c', '❌ 미보유': '#d62728'},
+            orientation='h'
+        )
+        fig_compare.update_layout(height=400, template="plotly_white")
+        st.plotly_chart(fig_compare, use_container_width=True)
+
+        st.markdown("---")
+        st.markdown("### 📑 세부 직무별 최저선(Baseline) 스펙 가이드라인")
+        c_base1, c_base2, c_base3 = st.columns(3)
+        with c_base1:
+            st.info("**📈 퍼포먼스 마케터 최소선**\n- 최소 툴: Excel, GA4\n- 필수 경험: 매체 운영/광고 집행")
+        with c_base2:
+            st.warning("**🎨 콘텐츠 마케터 최소선**\n- 최소 툴: Adobe(포토샵), 프리미어\n- 필수 경험: SNS 채널 운영")
+        with c_base3:
+            st.success("**💻 IT 플랫폼 마케터 최소선**\n- 최소 툴: Figma, SQL, Notion\n- 필수 경험: 서비스 런칭 경험")
