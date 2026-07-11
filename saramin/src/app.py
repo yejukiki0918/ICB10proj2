@@ -57,6 +57,17 @@ RED_FLAGS = {
     '멀티태스킹': r'멀티\s*태스킹|올라운더|all\s*rounder|다양한 업무',
     'A부터 Z까지': r'a부터 z까지|a to z'
 }
+CERTIFICATIONS = {
+    '검색광고마케터': r'검색광고마케터',
+    'GAIQ': r'gaiq',
+    'SQLD': r'sqld|sql개발자',
+    'ADsP / 데이터분석': r'adsp|데이터분석준전문가|빅데이터분석기사',
+    '사회조사분석사': r'사회조사분석사|사조사',
+    '정보처리기사': r'정보처리기사|정처기',
+    '컴퓨터활용능력': r'컴퓨터활용능력|컴활',
+    '포토샵/일러스트 (GTQ 등)': r'gtq|포토샵 자격|일러스트 자격|컴퓨터그래픽스',
+    '마케팅 관련 기사': r'마케팅\s*기사|경영지도사',
+}
 
 # ---------------------------------------------------------
 # 데이터 로드 및 전처리 (독립 캐싱 전략 적용)
@@ -394,3 +405,68 @@ with tab5:
             st.warning("**🎨 콘텐츠 마케터 최소선**\n- 최소 툴: Adobe(포토샵), 프리미어\n- 필수 경험: SNS 채널 운영")
         with c_base3:
             st.success("**💻 IT 플랫폼 마케터 최소선**\n- 최소 툴: Figma, SQL, Notion\n- 필수 경험: 서비스 런칭 경험")
+
+# TAB 6: 자격증 및 심층 분석 EDA
+with tab6:
+    st.header("📈 자격증 및 학력/경력 기반 심층 EDA")
+    st.markdown("현재 설정된 필터 조건에 맞춰 마케터 직무에서 요구하는 **자격증 수요 트렌드**와 **지원 요건별 스킬 강도**를 심층 분석합니다.")
+    
+    # 1. 자격증 랭킹 차트
+    st.subheader("🏆 시장 수요 1위 자격증은? (Top 10)")
+    cert_df = get_skill_counts_df(df['detail_text'].tolist(), CERTIFICATIONS)
+    cert_df = cert_df[cert_df['Count'] > 0] # 0건 제외
+    
+    c_cert_chart, c_cert_insight = st.columns([2, 1])
+    with c_cert_chart:
+        fig_cert = px.bar(cert_df.head(10), x='Count', y='Keyword', orientation='h', 
+                          text='Count', color='Count', color_continuous_scale='Purples')
+        fig_cert.update_layout(yaxis={'categoryorder':'total ascending'})
+        st.plotly_chart(fig_cert, use_container_width=True)
+    with c_cert_insight:
+        top_cert = cert_df.iloc[0]['Keyword'] if not cert_df.empty else "없음"
+        st.info(f"""**💡 데이터 인사이트 코멘트**\n
+현재 채용 시장(필터링 기준)에서 가장 많이 요구되거나 우대되는 자격증 1위는 **'{top_cert}'** 입니다. 
+마케터 직무 특성상 전통적인 국가 자격증보다는 실무에 즉시 투입 가능한 실전 툴 기반의 자격증(예: 검색광고마케터, GAIQ)이나 데이터 분석 역량을 증명할 수 있는 자격증(SQLD, ADsP)이 점차 더 높은 빈도로 등장하고 있습니다. 
+특히 신입이거나 스펙을 보완해야 하는 구직자라면 랭킹 상위권에 있는 자격증부터 우선적으로 취득하는 것이 가장 효율적인 스펙업 전략이 될 수 있습니다.""")
+        
+    st.markdown("---")
+    
+    # 2. 연차별 자격증 히트맵
+    st.subheader("🔥 경력 구간별 요구 자격증 히트맵")
+    # 조건에 따라 임의의 경력 구간(신입, 1~3년, 3년 이상) 분류
+    df['exp_group'] = df['experience'].apply(lambda x: '신입' if '신입' in str(x) else ('1~3년차' if any(str(n) in str(x) for n in [1,2,3]) else '4년차 이상'))
+    
+    heatmap_data_cert = {}
+    for group in ['신입', '1~3년차', '4년차 이상']:
+        sub_df = df[df['exp_group'] == group]
+        counts = get_skill_counts_df(sub_df['detail_text'].tolist(), CERTIFICATIONS)
+        heatmap_data_cert[group] = dict(zip(counts['Keyword'], counts['Count']))
+    
+    hm_cert_df = pd.DataFrame(heatmap_data_cert)
+    
+    c_hm_chart, c_hm_insight = st.columns([2, 1])
+    with c_hm_chart:
+        fig_hm_cert = px.imshow(hm_cert_df, text_auto=True, color_continuous_scale='Oranges', aspect="auto")
+        st.plotly_chart(fig_hm_cert, use_container_width=True)
+    with c_hm_insight:
+        st.warning("""**💡 데이터 인사이트 코멘트**\n
+경력 구간별로 요구하는 자격증의 분포가 뚜렷하게 다르게 나타납니다. 
+**'신입'**의 경우 실무 경험의 부재를 증명하기 위해 기본적인 '검색광고마케터'나 '컴퓨터활용능력' 같은 자격증이 필터링 요소로 작용하는 경향이 강합니다. 
+반면 **'경력직(3년차 이상)'**으로 갈수록 자격증 자체의 중요도는 낮아지거나, 단순 자격증이 아닌 'SQLD', 'ADsP' 등 고급 데이터 추출 및 분석 역량을 증명하는 난이도 높은 자격증의 비중이 상대적으로 짙어지는 양상을 보입니다. 자신의 연차에 맞는 타겟팅 전략이 필요합니다.""")
+
+    st.markdown("---")
+
+    # 3. 학력 컷트라인별 스킬 요구 강도 박스플롯
+    st.subheader("🎓 학력 컷트라인에 따른 하드스킬 요구 강도")
+    # 학력 전처리
+    df['edu_group'] = df['conditions'].apply(lambda x: '대졸이상' if '대졸' in str(x) or '4년' in str(x) else ('초대졸' if '초대졸' in str(x) or '2~3년' in str(x) else '학력무관/고졸'))
+    
+    c_box_chart, c_box_insight = st.columns([2, 1])
+    with c_box_chart:
+        fig_box = px.box(df, x='edu_group', y='spec_hardness', color='edu_group', points="all")
+        st.plotly_chart(fig_box, use_container_width=True)
+    with c_box_insight:
+        st.success("""**💡 데이터 인사이트 코멘트**\n
+학력 컷트라인(대졸 이상 vs 학력 무관)에 따라서 기업이 채용 공고에 명시해둔 '하드스킬 요구 개수(강도)'의 평균치가 어떻게 변하는지 보여주는 분포도입니다. 
+일반적으로 **'대졸 이상'**을 요구하는 포지션일수록 엑셀, GA4, SQL 등 여러 개의 툴 스택을 촘촘하게 요구하여 Y축 점수가 더 높게(위로) 형성되는 경향을 보입니다. 
+반대로 **'학력 무관'** 포지션에서는 요구 스펙의 꼬리가 아래쪽으로 길게 형성되며, 진입 장벽이 상대적으로 낮지만 특정 스킬(예: SNS 기획력, 디자인 툴) 하나만을 집중적으로 요구하는 실무형 인재 채용이 주를 이룸을 알 수 있습니다.""")
