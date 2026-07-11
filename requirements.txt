@@ -2,7 +2,6 @@ streamlit
 pandas
 plotly
 requests
-koreanize-matplotlib
 python-dotenv
 scikit-learn
 wordcloud

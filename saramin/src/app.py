@@ -15,7 +15,6 @@ from wordcloud import WordCloud
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import koreanize_matplotlib
 
 import warnings
 warnings.filterwarnings("ignore") # Deprecation warning 억제
