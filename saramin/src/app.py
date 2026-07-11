@@ -245,12 +245,17 @@ with tab3:
         
     with c4:
         st.subheader("☁️ 채용공고 핵심 워드클라우드")
-        text_corpus = " ".join(df['detail_text'].sample(min(len(df), 200)).tolist())
+        sample_size = min(len(df), 200)
+        text_corpus = " ".join(df['detail_text'].sample(sample_size, random_state=42).tolist())
         text_corpus = re.sub(r'우대|지원|채용|근무|기타|해당|가능|경력|신입|사항|관련|업무|조건', '', text_corpus)
-        if text_corpus.strip():
+        @st.cache_data(show_spinner=False)
+        def generate_cached_wordcloud(corpus):
             font_path = 'C:/Windows/Fonts/malgun.ttf'
             if not os.path.exists(font_path): font_path = None
-            wordcloud = WordCloud(font_path=font_path, width=700, height=350, background_color='white', colormap='ocean_r').generate(text_corpus)
+            return WordCloud(font_path=font_path, width=700, height=350, background_color='white', colormap='ocean_r').generate(corpus)
+
+        if text_corpus.strip():
+            wordcloud = generate_cached_wordcloud(text_corpus)
             fig_wc, ax = plt.subplots(figsize=(7, 3.5))
             ax.imshow(wordcloud, interpolation='bilinear')
             ax.axis("off")
