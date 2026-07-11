@@ -194,8 +194,8 @@ st.markdown("---")
 rf_status = '평균보다 높습니다 🚨' if current_rf_pct > overall_rf else '평균과 비슷하거나 낮습니다 ✅'
 st.success(f"🤖 **AI 자동 동향 요약:** 현재 선택된 필터 기준({len(df)}건), 채용이 가장 활발한 직무는 **[{top_cat}]**이며, 이 직군의 블랙기업 위험률은 **{rf_status}**. 구직자는 평균 **{avg_spec:.1f}개**의 핵심 스킬/경험을 무장해야 합니다.")
 
-# 5개의 세분화된 탭 분할
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 기본 직무 요약", "🔥 고급 통계 (히트맵)", "🚨 기업 문화 분석", "📁 데이터 탐색기", "🎯 내 스펙 합격률 시뮬레이터"])
+# 6개의 세분화된 탭 분할
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📊 기본 직무 요약", "🔥 고급 통계 (히트맵)", "🚨 기업 문화 분석", "📁 데이터 탐색기", "🎯 내 스펙 합격률 시뮬레이터", "📈 자격증 및 심층 분석 EDA"])
 
 @st.cache_data
 def get_skill_counts_df(text_series, _pattern_dict):
