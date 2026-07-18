@@ -83,6 +83,7 @@ models/
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
 
 # 숨김 폴더 및 숨김 파일 전체 무시
 .*
@@ -90,6 +91,8 @@ Thumbs.db
 !/.gitignore
 !/.gitattributes
 !/.agents/
+!.gitkeep
+!naverapiapp/data/
 
 # Streamlit 배포 설정 허용 (비밀 파일 secrets.toml은 엄격히 제외)
 !.streamlit/
